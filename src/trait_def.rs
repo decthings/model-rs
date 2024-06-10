@@ -44,7 +44,9 @@ pub trait DataLoaderBinary: Send + Sync {
     fn set_position(&mut self, position: u32);
 
     /// Returns the number of remaining data points, i.e self.size() - self.position().
-    fn remaining(&self) -> u32;
+    fn remaining(&self) -> u32 {
+        DataLoaderBinary::size(self) - DataLoaderBinary::position(self)
+    }
 
     /// Returns true if there are data left to fetch, i.e self.remaining() >= amount
     fn has_next(&self, amount: u32) -> bool {
@@ -77,7 +79,9 @@ pub trait DataLoader: Send + Sync {
     fn set_position(&mut self, position: u32);
 
     /// Returns the number of remaining data points, i.e self.size() - self.position().
-    fn remaining(&self) -> u32;
+    fn remaining(&self) -> u32 {
+        DataLoader::size(self) - DataLoader::position(self)
+    }
 
     /// Returns true if there are data left to fetch, i.e self.remaining() >= amount
     fn has_next(&self, amount: u32) -> bool {
@@ -258,7 +262,6 @@ pub trait ModelBinary: Send + Sync {
     type Instantiated: InstantiatedBinary;
 
     fn create_model_state<'a>(
-        &'a self,
         options: CreateModelStateOptions<
             impl DataLoaderBinary + 'a,
             impl StateProvider + 'a,
@@ -270,7 +273,6 @@ pub trait ModelBinary: Send + Sync {
     }
 
     fn instantiate_model<'a>(
-        &'a self,
         options: InstantiateModelOptions<impl StateLoader + 'a>,
     ) -> BoxFuture<'a, Self::Instantiated> {
         let _ = options;
@@ -334,7 +336,6 @@ pub trait Model: Send + Sync {
     type Instantiated: Instantiated;
 
     fn create_model_state<'a>(
-        &'a self,
         options: CreateModelStateOptions<
             impl DataLoader + 'a,
             impl StateProvider + 'a,
@@ -346,7 +347,6 @@ pub trait Model: Send + Sync {
     }
 
     fn instantiate_model<'a>(
-        &'a self,
         options: InstantiateModelOptions<impl StateLoader + 'a>,
     ) -> BoxFuture<'a, Self::Instantiated> {
         let _ = options;
@@ -361,20 +361,18 @@ where
     type Instantiated = T::Instantiated;
 
     fn create_model_state<'a>(
-        &'a self,
         options: CreateModelStateOptions<
             impl DataLoaderBinary + 'a,
             impl StateProvider + 'a,
             impl StateLoader + 'a,
         >,
     ) -> BoxFuture<'a, ()> {
-        T::create_model_state(self, options)
+        T::create_model_state(options)
     }
 
     fn instantiate_model<'a>(
-        &'a self,
         options: InstantiateModelOptions<impl StateLoader + 'a>,
     ) -> BoxFuture<'a, Self::Instantiated> {
-        T::instantiate_model(self, options)
+        T::instantiate_model(options)
     }
 }

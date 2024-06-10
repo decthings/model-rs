@@ -6,3 +6,7 @@ publish = false
 
 [dependencies]
 decthings-model = { path = "../decthings-model" }
+wit-bindgen-rt = "0.26"
+
+[package.metadata.component]
+package = "decthings:model"

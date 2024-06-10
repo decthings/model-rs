@@ -1,0 +1,100 @@
+package decthings:model@0.1.0;
+
+interface model-callbacks {
+    resource data-loader {
+        read: func(
+            start-index: u32,
+            amount: u32
+        ) -> list<list<u8>>;
+
+        shuffle: func(others: list<borrow<data-loader>>);
+    }
+
+    resource state-provider {
+        provide: func(data: list<tuple<string, list<u8>>>);
+    }
+
+    resource state-loader {
+        read: func() -> list<u8>;
+    }
+
+    resource train-tracker {
+        is-cancelled: func() -> bool;
+
+        progress: func(progress: f32);
+
+        metrics: func(metrics: list<tuple<string, list<u8>>>);
+    }
+}
+
+interface model {
+    use model-callbacks.{data-loader, state-provider, state-loader, train-tracker};
+
+    record param {
+        name: string,
+        amount: u32,
+        total-byte-size: u64,
+        data-loader: data-loader,
+    }
+
+    record state-key {
+        key: string,
+        byte-size: u64,
+        state-loader: state-loader,
+    }
+
+    record other-model-with-state {
+        model-id: string,
+        mount-path: string,
+        state: list<state-key>,
+    }
+
+    record create-model-state-options {
+        params: list<param>,
+        state-provider: state-provider,
+        other-models: list<other-model-with-state>,
+    }
+
+    create-model-state: func(options: create-model-state-options) -> result<_, string>;
+
+    record other-model {
+        model-id: string,
+        mount-path: string,
+    }
+
+    record instantiate-model-options {
+        state: list<state-key>,
+        other-models: list<other-model>,
+    }
+
+    record evaluate-options {
+        params: list<param>,
+    }
+
+    record evaluate-output {
+        name: string,
+        data: list<list<u8>>,
+    }
+
+    record train-options {
+        params: list<param>,
+        tracker: train-tracker,
+    }
+
+    record get-model-state-options {
+        state-provider: state-provider,
+    }
+
+    resource instantiated {
+        evaluate: func(options: evaluate-options) -> result<list<evaluate-output>, string>;
+        train: func(options: train-options) -> result<_, string>;
+        get-model-state: func(options: get-model-state-options) -> result<_, string>;
+    }
+
+    instantiate-model: func(options: instantiate-model-options) -> result<instantiated, string>;
+}
+
+world model-runner {
+    import model-callbacks;
+    export model;
+}

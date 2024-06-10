@@ -82,7 +82,6 @@ struct InstantiatedModelWaiter<I: InstantiatedBinary> {
 }
 
 struct Runner<M: ModelBinary> {
-    model: Arc<M>,
     sender: host_protocol::Sender,
     data_loader_manager: DataLoaderManager,
     instantiated_models: Arc<Mutex<HashMap<String, InstantiatedModelWaiter<M::Instantiated>>>>,
@@ -92,7 +91,6 @@ struct Runner<M: ModelBinary> {
 impl<M: ModelBinary> Clone for Runner<M> {
     fn clone(&self) -> Self {
         Self {
-            model: self.model.clone(),
             sender: self.sender.clone(),
             data_loader_manager: self.data_loader_manager.clone(),
             instantiated_models: self.instantiated_models.clone(),
@@ -140,52 +138,47 @@ where
                 params,
                 other_models,
             } => {
-                let error = match std::panic::AssertUnwindSafe(
-                    self.model
-                        .create_model_state(crate::trait_def::CreateModelStateOptions {
-                            params: params
-                                .into_iter()
-                                .map(|x| {
-                                    (
-                                        x.name,
-                                        self.create_data_loader(
-                                            x.dataset,
-                                            x.amount,
-                                            x.total_byte_size,
-                                        ),
-                                    )
-                                })
-                                .collect(),
-                            state_provider: stateprovider::create_state_provider(
-                                &id,
-                                self.sender.clone(),
-                            ),
-                            other_models: other_models
-                                .into_iter()
-                                .map(|other_model| {
-                                    (
-                                        other_model.id,
-                                        crate::trait_def::OtherModelWithState {
-                                            mount_path: other_model.mount_path,
-                                            state: other_model
-                                                .state
-                                                .into_iter()
-                                                .map(|param| {
-                                                    (
-                                                        param.name,
-                                                        self.create_state_loader(
-                                                            param.dataset,
-                                                            param.total_byte_size,
-                                                        ),
-                                                    )
-                                                })
-                                                .collect(),
-                                        },
-                                    )
-                                })
-                                .collect(),
-                        }),
-                )
+                let error = match std::panic::AssertUnwindSafe(M::create_model_state(
+                    crate::trait_def::CreateModelStateOptions {
+                        params: params
+                            .into_iter()
+                            .map(|x| {
+                                (
+                                    x.name,
+                                    self.create_data_loader(x.dataset, x.amount, x.total_byte_size),
+                                )
+                            })
+                            .collect(),
+                        state_provider: stateprovider::create_state_provider(
+                            &id,
+                            self.sender.clone(),
+                        ),
+                        other_models: other_models
+                            .into_iter()
+                            .map(|other_model| {
+                                (
+                                    other_model.id,
+                                    crate::trait_def::OtherModelWithState {
+                                        mount_path: other_model.mount_path,
+                                        state: other_model
+                                            .state
+                                            .into_iter()
+                                            .map(|param| {
+                                                (
+                                                    param.name,
+                                                    self.create_state_loader(
+                                                        param.dataset,
+                                                        param.total_byte_size,
+                                                    ),
+                                                )
+                                            })
+                                            .collect(),
+                                    },
+                                )
+                            })
+                            .collect(),
+                    },
+                ))
                 .catch_unwind()
                 .await
                 {
@@ -225,31 +218,30 @@ where
                     Ok(())
                 };
                 let instantiate_fut = async {
-                    let res = std::panic::AssertUnwindSafe(
-                        self.model
-                            .instantiate_model(crate::trait_def::InstantiateModelOptions {
-                                state: state
-                                    .into_iter()
-                                    .map(|x| {
-                                        (
-                                            x.name,
-                                            self.create_state_loader(x.dataset, x.total_byte_size),
-                                        )
-                                    })
-                                    .collect(),
-                                other_models: other_models
-                                    .into_iter()
-                                    .map(|other_model| {
-                                        (
-                                            other_model.id,
-                                            crate::trait_def::OtherModel {
-                                                mount_path: other_model.mount_path,
-                                            },
-                                        )
-                                    })
-                                    .collect(),
-                            }),
-                    )
+                    let res = std::panic::AssertUnwindSafe(M::instantiate_model(
+                        crate::trait_def::InstantiateModelOptions {
+                            state: state
+                                .into_iter()
+                                .map(|x| {
+                                    (
+                                        x.name,
+                                        self.create_state_loader(x.dataset, x.total_byte_size),
+                                    )
+                                })
+                                .collect(),
+                            other_models: other_models
+                                .into_iter()
+                                .map(|other_model| {
+                                    (
+                                        other_model.id,
+                                        crate::trait_def::OtherModel {
+                                            mount_path: other_model.mount_path,
+                                        },
+                                    )
+                                })
+                                .collect(),
+                        },
+                    ))
                     .catch_unwind()
                     .await;
                     Err::<(), _>(res)
@@ -531,7 +523,7 @@ where
     }
 }
 
-pub async fn run_model_binary<M: ModelBinary + Send + Sync + 'static>(model: M)
+pub async fn run_model<M: ModelBinary + Send + Sync + 'static>()
 where
     M::Instantiated: Send + Sync,
 {
@@ -549,8 +541,7 @@ where
 
     let (sender, sender_fut) = host_protocol::Sender::new(writer);
 
-    let runner = Runner {
-        model: Arc::new(model),
+    let runner = Runner::<M> {
         sender: sender.clone(),
         data_loader_manager: DataLoaderManager::new(sender.clone()),
         instantiated_models: Arc::new(Mutex::new(HashMap::new())),
@@ -570,11 +561,4 @@ where
         sender_fut,
         runner.run(reader),
     );
-}
-
-pub async fn run_model<M: Model + Send + Sync + 'static>(model: M)
-where
-    M::Instantiated: Send + Sync,
-{
-    run_model_binary(model).await;
 }

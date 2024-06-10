@@ -34,7 +34,6 @@ impl decthings_model::Model for Model {
     type Instantiated = Instantiated;
 
     fn create_model_state<'a>(
-        &'a self,
         _options: decthings_model::CreateModelStateOptions<
             impl decthings_model::DataLoader + 'a,
             impl decthings_model::StateProvider + 'a,
@@ -45,7 +44,6 @@ impl decthings_model::Model for Model {
     }
 
     fn instantiate_model<'a>(
-        &'a self,
         _options: decthings_model::InstantiateModelOptions<impl decthings_model::StateLoader + 'a>,
     ) -> Pin<Box<dyn Future<Output = Self::Instantiated> + Send + 'a>> {
         todo!()
@@ -53,7 +51,7 @@ impl decthings_model::Model for Model {
 }
 
 #[cfg(target_family = "wasm")]
-#[decthings_model::decthings_initialize]
-fn create_model() -> Model {
-    Model
-}
+mod bindings;
+
+#[cfg(target_family = "wasm")]
+decthings_model::wasm_bindings::export_decthings_model!(Model with_types_in bindings);

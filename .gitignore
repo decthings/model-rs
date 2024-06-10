@@ -1,1 +1,3 @@
+Cargo.lock
 target
+tests/src/bindings.rs

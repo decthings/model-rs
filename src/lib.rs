@@ -1,8 +1,5 @@
 #[cfg(target_family = "wasm")]
-mod wasm;
-
-#[cfg(target_family = "wasm")]
-pub use wasm::*;
+pub mod wasm_bindings;
 
 #[cfg(target_family = "unix")]
 mod unix;
@@ -15,3 +12,5 @@ mod trait_def;
 
 pub use parameter::*;
 pub use trait_def::*;
+
+pub use bytes;
