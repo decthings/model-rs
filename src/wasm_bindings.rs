@@ -168,7 +168,7 @@ macro_rules! export_decthings_model {
             }
         }
 
-        impl<T: ::decthings_model::Model> $($path_to_types_root)*::exports::decthings::model::model::Guest for T
+        impl<T: ::decthings_model::ModelBinary> $($path_to_types_root)*::exports::decthings::model::model::Guest for T
             where T::Instantiated: 'static
         {
             type Instantiated = T::Instantiated;

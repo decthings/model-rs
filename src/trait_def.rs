@@ -4,6 +4,33 @@ use futures::future::BoxFuture;
 
 use decthings_api::tensor::{DecthingsTensor, OwnedDecthingsTensor};
 
+#[derive(Debug, Clone)]
+pub struct EvaluateOutput<'a> {
+    pub name: String,
+    pub data: Vec<decthings_api::tensor::DecthingsTensor<'a>>,
+}
+
+#[cfg_attr(target_family = "unix", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone)]
+pub struct EvaluateOutputBinary {
+    pub name: String,
+    #[cfg_attr(target_family = "unix", serde(skip_serializing, skip_deserializing))]
+    pub data: Vec<bytes::Bytes>,
+}
+
+impl<'a> From<EvaluateOutput<'a>> for EvaluateOutputBinary {
+    fn from(value: EvaluateOutput) -> Self {
+        Self {
+            name: value.name,
+            data: value
+                .data
+                .into_iter()
+                .map(|x| x.serialize().into())
+                .collect(),
+        }
+    }
+}
+
 pub trait StateLoader: Send + Sync {
     fn byte_size(&self) -> u64;
 
@@ -216,7 +243,7 @@ pub trait InstantiatedBinary: Send + Sync {
     fn evaluate<'a>(
         &'a self,
         options: EvaluateOptions<impl DataLoaderBinary + 'a>,
-    ) -> BoxFuture<'a, Vec<crate::ParameterBinary>> {
+    ) -> BoxFuture<'a, Vec<EvaluateOutputBinary>> {
         let _ = options;
         panic!("Evaluate was called but was not implemented.");
     }
@@ -284,7 +311,7 @@ pub trait Instantiated: Send + Sync {
     fn evaluate<'a>(
         &'a self,
         options: EvaluateOptions<impl DataLoader + 'a>,
-    ) -> BoxFuture<'a, Vec<crate::Parameter<'a>>> {
+    ) -> BoxFuture<'a, Vec<EvaluateOutput<'a>>> {
         let _ = options;
         panic!("Evaluate was called but was not implemented.");
     }
@@ -310,7 +337,7 @@ impl<T: Instantiated + Sync> InstantiatedBinary for T {
     fn evaluate<'a>(
         &'a self,
         options: EvaluateOptions<impl DataLoaderBinary + 'a>,
-    ) -> BoxFuture<'a, Vec<crate::ParameterBinary>> {
+    ) -> BoxFuture<'a, Vec<EvaluateOutputBinary>> {
         Box::pin(async move {
             let res = T::evaluate(self, options).await;
             res.into_iter().map(|x| x.into()).collect()
