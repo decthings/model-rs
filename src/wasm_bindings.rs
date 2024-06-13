@@ -40,10 +40,15 @@ macro_rules! export_decthings_model {
                 self.position = position;
             }
 
-            fn next(&mut self, amount: u32) -> ::core::pin::Pin<::std::boxed::Box<dyn ::core::future::Future<Output = ::std::vec::Vec<::decthings_model::bytes::Bytes>> + Send + '_>> {
+            fn next(&mut self, mut amount: u32) -> ::core::pin::Pin<::std::boxed::Box<dyn ::core::future::Future<Output = ::std::vec::Vec<::decthings_model::bytes::Bytes>> + Send + '_>> {
+                amount = amount.min(::decthings_model::DataLoaderBinary::remaining(self));
+
                 let start_index = self.position;
                 self.position += amount;
                 ::std::boxed::Box::pin(async move {
+                    if amount == 0 {
+                        return vec![];
+                    }
                     self.inner.read(start_index, amount).into_iter().map(Into::into).collect()
                 })
             }
