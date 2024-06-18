@@ -4,14 +4,14 @@ use futures::future::BoxFuture;
 
 use decthings_api::tensor::{DecthingsTensor, OwnedDecthingsTensor};
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 pub struct EvaluateOutput<'a> {
     pub name: String,
     pub data: Vec<decthings_api::tensor::DecthingsTensor<'a>>,
 }
 
 #[cfg_attr(target_family = "unix", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 pub struct EvaluateOutputBinary {
     pub name: String,
     #[cfg_attr(target_family = "unix", serde(skip_serializing, skip_deserializing))]
@@ -160,6 +160,7 @@ impl<T: DataLoaderBinary + Send> DataLoader for T {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct MetricBinary<S: AsRef<str>> {
     pub name: S,
     pub data: bytes::Bytes,
@@ -176,6 +177,7 @@ pub trait TrainTrackerBinary: Send + Sync {
     ) -> BoxFuture<'a, ()>;
 }
 
+#[derive(Clone, Debug)]
 pub struct Metric<'a, S: AsRef<str>> {
     pub name: S,
     pub data: DecthingsTensor<'a>,
@@ -226,15 +228,18 @@ impl<T: TrainTrackerBinary> TrainTracker for T {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct EvaluateOptions<D> {
     pub params: HashMap<String, D>,
 }
 
+#[derive(Clone, Debug)]
 pub struct TrainOptions<D, T> {
     pub params: HashMap<String, D>,
     pub tracker: T,
 }
 
+#[derive(Clone, Debug)]
 pub struct GetModelStateOptions<SP: StateProvider> {
     pub state_provider: SP,
 }
@@ -265,21 +270,25 @@ pub trait InstantiatedBinary: Send + Sync {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct OtherModelWithState<SL: StateLoader> {
     pub mount_path: String,
     pub state: HashMap<String, SL>,
 }
 
+#[derive(Clone, Debug)]
 pub struct CreateModelStateOptions<D, SP: StateProvider, SL: StateLoader> {
     pub params: HashMap<String, D>,
     pub state_provider: SP,
     pub other_models: HashMap<String, OtherModelWithState<SL>>,
 }
 
+#[derive(Clone, Debug)]
 pub struct OtherModel {
     pub mount_path: String,
 }
 
+#[derive(Clone, Debug)]
 pub struct InstantiateModelOptions<SL: StateLoader> {
     pub state: HashMap<String, SL>,
     pub other_models: HashMap<String, OtherModel>,
