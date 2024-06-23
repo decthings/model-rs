@@ -5,9 +5,9 @@ use futures::future::BoxFuture;
 use decthings_api::tensor::{DecthingsTensor, OwnedDecthingsTensor};
 
 #[derive(Clone, Debug)]
-pub struct EvaluateOutput<'a> {
+pub struct EvaluateOutput {
     pub name: String,
-    pub data: Vec<decthings_api::tensor::DecthingsTensor<'a>>,
+    pub data: Vec<OwnedDecthingsTensor>,
 }
 
 #[cfg_attr(target_family = "unix", derive(serde::Serialize, serde::Deserialize))]
@@ -18,15 +18,11 @@ pub struct EvaluateOutputBinary {
     pub data: Vec<bytes::Bytes>,
 }
 
-impl<'a> From<EvaluateOutput<'a>> for EvaluateOutputBinary {
+impl From<EvaluateOutput> for EvaluateOutputBinary {
     fn from(value: EvaluateOutput) -> Self {
         Self {
             name: value.name,
-            data: value
-                .data
-                .into_iter()
-                .map(|x| x.serialize().into())
-                .collect(),
+            data: value.data.into_iter().map(|x| x.serialize()).collect(),
         }
     }
 }
@@ -320,7 +316,7 @@ pub trait Instantiated: Send + Sync {
     fn evaluate<'a>(
         &'a self,
         options: EvaluateOptions<impl DataLoader + 'a>,
-    ) -> BoxFuture<'a, Vec<EvaluateOutput<'a>>> {
+    ) -> BoxFuture<'a, Vec<EvaluateOutput>> {
         let _ = options;
         panic!("Evaluate was called but was not implemented.");
     }

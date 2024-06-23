@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 bytes = "1"
 byte-slice-cast = "1.2"
-decthings-api = { version = "0.0", default-features = false }
+decthings-api = { version = "0.1", default-features = false }
 futures = "0.3"
 lazy_static = "1.4"
 ndarray = "0.15"
