@@ -503,16 +503,12 @@ where
             {
                 host_protocol::MessageFromHost::Command(cmd) => {
                     asyncs::spawn(async move {
-                        let Some((id, result, additional_segments_output)) =
-                            runner.handle_command(cmd).await
+                        let Some((id, result, blobs_output)) = runner.handle_command(cmd).await
                         else {
                             return;
                         };
 
-                        runner
-                            .sender
-                            .send_result(id, result, additional_segments_output)
-                            .await;
+                        runner.sender.send_result(id, result, blobs_output).await;
                     });
                 }
                 host_protocol::MessageFromHost::ProvideData(request_id, data) => {

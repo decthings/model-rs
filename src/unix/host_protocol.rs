@@ -218,8 +218,8 @@ pub async fn read_message_from_host(
     let first_byte = super::asyncs::read_u8(&mut reader).await?;
     if first_byte == 0 {
         // RPC
-        let segment_length = super::asyncs::read_u64(&mut reader).await? as usize;
-        let mut buf = vec![0; segment_length as usize];
+        let blob_length = super::asyncs::read_u64(&mut reader).await? as usize;
+        let mut buf = vec![0; blob_length as usize];
         reader.read_exact(&mut buf).await?;
         Ok(MessageFromHost::Command(
             serde_json::from_slice(&buf).expect("Failed to parse incoming message from host"),
@@ -227,11 +227,11 @@ pub async fn read_message_from_host(
     } else {
         // Provide data
         let request_id = super::asyncs::read_u32(&mut reader).await?;
-        let num_segments = super::asyncs::read_u32(&mut reader).await?;
-        let mut data = Vec::with_capacity(num_segments as usize);
-        for _ in 0..num_segments {
-            let segment_length = super::asyncs::read_u64(&mut reader).await? as usize;
-            let mut buf = vec![0; segment_length as usize];
+        let num_blobs = super::asyncs::read_u32(&mut reader).await?;
+        let mut data = Vec::with_capacity(num_blobs as usize);
+        for _ in 0..num_blobs {
+            let blob_length = super::asyncs::read_u64(&mut reader).await? as usize;
+            let mut buf = vec![0; blob_length as usize];
             reader.read_exact(&mut buf).await?;
             data.push(buf.into());
         }
@@ -258,23 +258,20 @@ impl Sender {
             async {
                 while let Some(msg) = super::asyncs::channel_recv(&mut rx).await {
                     match msg {
-                        MessageToHost::ResultOrEvent(msg, additional_segments) => {
+                        MessageToHost::ResultOrEvent(msg, blobs) => {
                             super::asyncs::write_u8(&mut writer, 0).await?;
-                            super::asyncs::write_u32(
-                                &mut writer,
-                                additional_segments.len().try_into().unwrap(),
-                            )
-                            .await?;
+                            super::asyncs::write_u32(&mut writer, blobs.len().try_into().unwrap())
+                                .await?;
                             super::asyncs::write_u64(&mut writer, msg.len() as u64).await?;
                             writer.write_all(&msg).await?;
                             drop(msg);
-                            for additional in additional_segments {
+                            for blob in blobs {
                                 super::asyncs::write_u64(
                                     &mut writer,
-                                    additional.as_ref().len().try_into().unwrap(),
+                                    blob.as_ref().len().try_into().unwrap(),
                                 )
                                 .await?;
-                                writer.write_all(additional.as_ref()).await?;
+                                writer.write_all(blob.as_ref()).await?;
                             }
                             super::asyncs::write_u8(&mut writer, 1).await?;
                         }
@@ -295,12 +292,7 @@ impl Sender {
         })
     }
 
-    pub async fn send_result(
-        &self,
-        id: String,
-        result: ResultMessage,
-        additional_segments: Vec<bytes::Bytes>,
-    ) {
+    pub async fn send_result(&self, id: String, result: ResultMessage, blobs: Vec<bytes::Bytes>) {
         #[derive(serde::Serialize)]
         struct ResultMessageWithId {
             result: ResultMessage,
@@ -308,7 +300,7 @@ impl Sender {
         }
         let msg = serde_json::to_vec(&ResultMessageWithId { id, result }).unwrap();
         self.tx
-            .send(MessageToHost::ResultOrEvent(msg, additional_segments))
+            .send(MessageToHost::ResultOrEvent(msg, blobs))
             .await
             .map_err(|_| ())
             .unwrap();
@@ -317,11 +309,11 @@ impl Sender {
     pub async fn send_event<S: AsRef<str>>(
         &self,
         event: EventMessage<'_, S>,
-        additional_segments: Vec<bytes::Bytes>,
+        blobs: Vec<bytes::Bytes>,
     ) {
         let msg = serde_json::to_vec(&event).unwrap();
         self.tx
-            .send(MessageToHost::ResultOrEvent(msg, additional_segments))
+            .send(MessageToHost::ResultOrEvent(msg, blobs))
             .await
             .map_err(|_| ())
             .unwrap();
