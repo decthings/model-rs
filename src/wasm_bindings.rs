@@ -124,6 +124,67 @@ macro_rules! export_decthings_model {
                                         inner: param.data_loader,
                                     },
                                 )).collect(),
+                                expected_output_types: options.expected_output_types.into_iter().map(|output| (
+                                    output.name,
+                                    ::decthings_model::decthings_api::tensor::DecthingsTensorRules {
+                                        shape: output.rules.shape,
+                                        allowed_types: output
+                                            .rules
+                                            .allowed_types
+                                            .into_iter()
+                                            .map(|y| match y {
+                                                $($path_to_types_root)*::exports::decthings::model::model::DecthingsElementType::F32 => {
+                                                    ::decthings_model::decthings_api::tensor::DecthingsElementType::F32
+                                                }
+                                                $($path_to_types_root)*::exports::decthings::model::model::DecthingsElementType::F64 => {
+                                                    ::decthings_model::decthings_api::tensor::DecthingsElementType::F64
+                                                }
+                                                $($path_to_types_root)*::exports::decthings::model::model::DecthingsElementType::I8 => {
+                                                    ::decthings_model::decthings_api::tensor::DecthingsElementType::I8
+                                                }
+                                                $($path_to_types_root)*::exports::decthings::model::model::DecthingsElementType::I16 => {
+                                                    ::decthings_model::decthings_api::tensor::DecthingsElementType::I16
+                                                }
+                                                $($path_to_types_root)*::exports::decthings::model::model::DecthingsElementType::I32 => {
+                                                    ::decthings_model::decthings_api::tensor::DecthingsElementType::I32
+                                                }
+                                                $($path_to_types_root)*::exports::decthings::model::model::DecthingsElementType::I64 => {
+                                                    ::decthings_model::decthings_api::tensor::DecthingsElementType::I64
+                                                }
+                                                $($path_to_types_root)*::exports::decthings::model::model::DecthingsElementType::U8 => {
+                                                    ::decthings_model::decthings_api::tensor::DecthingsElementType::U8
+                                                }
+                                                $($path_to_types_root)*::exports::decthings::model::model::DecthingsElementType::U16 => {
+                                                    ::decthings_model::decthings_api::tensor::DecthingsElementType::U16
+                                                }
+                                                $($path_to_types_root)*::exports::decthings::model::model::DecthingsElementType::U32 => {
+                                                    ::decthings_model::decthings_api::tensor::DecthingsElementType::U32
+                                                }
+                                                $($path_to_types_root)*::exports::decthings::model::model::DecthingsElementType::U64 => {
+                                                    ::decthings_model::decthings_api::tensor::DecthingsElementType::U64
+                                                }
+                                                $($path_to_types_root)*::exports::decthings::model::model::DecthingsElementType::String => {
+                                                    ::decthings_model::decthings_api::tensor::DecthingsElementType::String
+                                                }
+                                                $($path_to_types_root)*::exports::decthings::model::model::DecthingsElementType::Boolean => {
+                                                    ::decthings_model::decthings_api::tensor::DecthingsElementType::Boolean
+                                                }
+                                                $($path_to_types_root)*::exports::decthings::model::model::DecthingsElementType::Binary => {
+                                                    ::decthings_model::decthings_api::tensor::DecthingsElementType::Binary
+                                                }
+                                                $($path_to_types_root)*::exports::decthings::model::model::DecthingsElementType::Image => {
+                                                    ::decthings_model::decthings_api::tensor::DecthingsElementType::Image
+                                                }
+                                                $($path_to_types_root)*::exports::decthings::model::model::DecthingsElementType::Audio => {
+                                                    ::decthings_model::decthings_api::tensor::DecthingsElementType::Audio
+                                                }
+                                                $($path_to_types_root)*::exports::decthings::model::model::DecthingsElementType::Video => {
+                                                    ::decthings_model::decthings_api::tensor::DecthingsElementType::Video
+                                                }
+                                            })
+                                            .collect()
+                                    }
+                                )).collect()
                             }
                         )
                     )

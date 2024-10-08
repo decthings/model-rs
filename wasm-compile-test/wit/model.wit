@@ -67,8 +67,38 @@ interface model {
         other-models: list<other-model>,
     }
 
+    enum decthings-element-type {
+        %f32,
+        %f64,
+        i8,
+        i16,
+        i32,
+        i64,
+        %u8,
+        %u16,
+        %u32,
+        %u64,
+        %string,
+        boolean,
+        binary,
+        image,
+        audio,
+        video,
+    }
+
+    record decthings-tensor-rules {
+        shape: list<option<u32>>,
+        allowed-types: list<decthings-element-type>,
+    }
+
+    record decthings-parameter-definition {
+        name: string,
+        rules: decthings-tensor-rules,
+    }
+
     record evaluate-options {
         params: list<param>,
+        expected-output-types: list<decthings-parameter-definition>,
     }
 
     record evaluate-output {

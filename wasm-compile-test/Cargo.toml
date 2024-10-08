@@ -5,7 +5,7 @@ edition = "2021"
 publish = false
 
 [dependencies]
-decthings-model = { path = "../decthings-model" }
+decthings-model = { path = "../" }
 wit-bindgen-rt = "0.26"
 
 [package.metadata.component]

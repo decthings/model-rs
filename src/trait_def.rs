@@ -227,6 +227,7 @@ impl<T: TrainTrackerBinary> TrainTracker for T {
 #[derive(Clone, Debug)]
 pub struct EvaluateOptions<D> {
     pub params: HashMap<String, D>,
+    pub expected_output_types: HashMap<String, decthings_api::tensor::DecthingsTensorRules>,
 }
 
 #[derive(Clone, Debug)]

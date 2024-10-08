@@ -12,3 +12,4 @@ pub use unix::*;
 pub use trait_def::*;
 
 pub use bytes;
+pub use decthings_api;

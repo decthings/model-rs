@@ -363,6 +363,7 @@ where
                 id,
                 instantiated_model_id,
                 params,
+                expected_output_types,
             } => {
                 let instantiated = {
                     let instantiated_models = self.instantiated_models.lock().unwrap();
@@ -393,6 +394,10 @@ where
                                                 ),
                                             )
                                         })
+                                        .collect(),
+                                    expected_output_types: expected_output_types
+                                        .into_iter()
+                                        .map(|x| (x.name, x.rules))
                                         .collect(),
                                 }),
                         )

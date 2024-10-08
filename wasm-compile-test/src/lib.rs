@@ -1,5 +1,8 @@
 use std::{future::Future, pin::Pin};
 
+// This file checks if a wasm model can compile successfully. To test, run
+// cd wasm-compile-test && cargo component check --target wasm32-wasi
+
 struct Instantiated;
 
 impl decthings_model::Instantiated for Instantiated {
@@ -16,7 +19,7 @@ impl decthings_model::Instantiated for Instantiated {
     fn evaluate<'a>(
         &'a self,
         _options: decthings_model::EvaluateOptions<impl decthings_model::DataLoader + 'a>,
-    ) -> Pin<Box<dyn Future<Output = Vec<decthings_model::Parameter<'a>>> + Send + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = Vec<decthings_model::EvaluateOutput>> + Send + 'a>> {
         todo!()
     }
 

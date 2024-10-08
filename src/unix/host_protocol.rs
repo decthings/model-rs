@@ -61,6 +61,7 @@ pub enum CommandMessage {
         id: String,
         instantiated_model_id: String,
         params: Vec<Param>,
+        expected_output_types: Vec<decthings_api::tensor::DecthingsParameterDefinition>,
     },
     #[serde(rename_all = "camelCase")]
     CallGetModelState {
