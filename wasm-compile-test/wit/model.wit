@@ -93,6 +93,7 @@ interface model {
 
     record decthings-parameter-definition {
         name: string,
+        required: bool,
         rules: decthings-tensor-rules,
     }
 

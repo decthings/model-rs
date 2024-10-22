@@ -397,7 +397,15 @@ where
                                         .collect(),
                                     expected_output_types: expected_output_types
                                         .into_iter()
-                                        .map(|x| (x.name, x.rules))
+                                        .map(|x| {
+                                            (
+                                                x.name,
+                                                crate::trait_def::ExpectedOutputType {
+                                                    rules: x.rules,
+                                                    required: x.required,
+                                                },
+                                            )
+                                        })
                                         .collect(),
                                 }),
                         )
