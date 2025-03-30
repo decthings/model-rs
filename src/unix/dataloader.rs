@@ -54,7 +54,10 @@ impl<'a> DataLoaderBinary for DataLoaderImpl<'a> {
 
     fn set_position(&mut self, position: u32) {
         if position >= self.size {
-            panic!("DataLoader: Cannot set the the position to a value greater than or equal to the data size. The data size was {}, and position {} was attempted to be set.", self.size, position);
+            panic!(
+                "DataLoader: Cannot set the the position to a value greater than or equal to the data size. The data size was {}, and position {} was attempted to be set.",
+                self.size, position
+            );
         }
         self.position = position;
     }
@@ -142,7 +145,7 @@ impl DataLoaderManager {
         total_byte_size: u64,
     ) -> (
         impl DataLoaderBinary + StateLoader + 'static,
-        impl Future<Output = ()> + Send,
+        impl Future<Output = ()> + Send + 'static,
     ) {
         let (tx, mut rx) = super::asyncs::channel(1);
 
@@ -191,7 +194,7 @@ impl DataLoaderManager {
         total_byte_size: u64,
     ) -> (
         impl DataLoaderBinary + 'static,
-        impl Future<Output = ()> + Send,
+        impl Future<Output = ()> + Send + 'static,
     ) {
         self.do_create_data_loader(dataset, size, total_byte_size)
     }
@@ -200,7 +203,10 @@ impl DataLoaderManager {
         &self,
         dataset: String,
         byte_size: u64,
-    ) -> (impl StateLoader + 'static, impl Future<Output = ()> + Send) {
+    ) -> (
+        impl StateLoader + 'static,
+        impl Future<Output = ()> + Send + 'static,
+    ) {
         self.do_create_data_loader(dataset, 1, byte_size)
     }
 }

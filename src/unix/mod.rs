@@ -433,12 +433,13 @@ where
                                 (
                                     Some(outputs),
                                     None,
-                                    vec![data
-                                        .into_iter()
-                                        .flatten()
-                                        .collect::<Vec<_>>()
-                                        .concat()
-                                        .into()],
+                                    vec![
+                                        data.into_iter()
+                                            .flatten()
+                                            .collect::<Vec<_>>()
+                                            .concat()
+                                            .into(),
+                                    ],
                                 )
                             }
                             Err(e) => (
