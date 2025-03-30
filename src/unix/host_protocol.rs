@@ -15,10 +15,10 @@ pub struct Param {
 
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct OtherModelWithState {
+pub struct OtherModelWithWeights {
     pub id: String,
     pub mount_path: String,
-    pub state: Vec<Param>,
+    pub weights: Vec<Param>,
 }
 
 #[derive(serde::Deserialize)]
@@ -33,16 +33,16 @@ pub struct OtherModel {
 #[serde(tag = "method", content = "params", rename_all = "camelCase")]
 pub enum CommandMessage {
     #[serde(rename_all = "camelCase")]
-    CallCreateModelState {
+    CallInitializeWeights {
         id: String,
         params: Vec<Param>,
-        other_models: Vec<OtherModelWithState>,
+        other_models: Vec<OtherModelWithWeights>,
     },
     #[serde(rename_all = "camelCase")]
     CallInstantiateModel {
         id: String,
         instantiated_model_id: String,
-        state: Vec<Param>,
+        weights: Vec<Param>,
         other_models: Vec<OtherModel>,
     },
     #[serde(rename_all = "camelCase")]
@@ -64,7 +64,7 @@ pub enum CommandMessage {
         expected_output_types: Vec<decthings_api::tensor::DecthingsParameterDefinition>,
     },
     #[serde(rename_all = "camelCase")]
-    CallGetModelState {
+    CallGetWeights {
         id: String,
         instantiated_model_id: String,
     },
@@ -72,7 +72,7 @@ pub enum CommandMessage {
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "snake_case", tag = "code")]
-pub enum CallCreateModelStateError {
+pub enum CallInitializeWeightsError {
     Exception {
         #[serde(skip_serializing_if = "Option::is_none")]
         details: Option<String>,
@@ -117,7 +117,7 @@ pub enum CallEvaluateError {
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "snake_case", tag = "code")]
-pub enum CallGetModelStateError {
+pub enum CallGetWeightsError {
     Exception {
         #[serde(skip_serializing_if = "Option::is_none")]
         details: Option<String>,
@@ -130,9 +130,9 @@ pub enum CallGetModelStateError {
 #[serde(untagged, rename_all = "camelCase")]
 pub enum ResultMessage {
     #[serde(rename_all = "camelCase")]
-    CallCreateModelState {
+    CallInitializeWeights {
         #[serde(skip_serializing_if = "Option::is_none")]
-        error: Option<CallCreateModelStateError>,
+        error: Option<CallInitializeWeightsError>,
     },
     #[serde(rename_all = "camelCase")]
     CallInstantiateModel {
@@ -152,9 +152,9 @@ pub enum ResultMessage {
         outputs: Option<Vec<EvaluateOutput>>,
     },
     #[serde(rename_all = "camelCase")]
-    CallGetModelState {
+    CallGetWeights {
         #[serde(skip_serializing_if = "Option::is_none")]
-        error: Option<CallGetModelStateError>,
+        error: Option<CallGetWeightsError>,
     },
 }
 
@@ -187,7 +187,7 @@ pub enum EventMessage<'a, S: AsRef<str>> {
         names: &'a [S],
     },
     #[serde(rename_all = "camelCase")]
-    ProvideStateData {
+    ProvideWeightsData {
         command_id: &'a str,
         #[serde(serialize_with = "serialize_asref_str_seq")]
         names: &'a [S],

@@ -10,11 +10,11 @@ interface model-callbacks {
         shuffle: func(others: list<borrow<data-loader>>);
     }
 
-    resource state-provider {
+    resource weights-provider {
         provide: func(data: list<tuple<string, list<u8>>>);
     }
 
-    resource state-loader {
+    resource weights-loader {
         read: func() -> list<u8>;
     }
 
@@ -28,7 +28,7 @@ interface model-callbacks {
 }
 
 interface model {
-    use model-callbacks.{data-loader, state-provider, state-loader, train-tracker};
+    use model-callbacks.{data-loader, weights-provider, weights-loader, train-tracker};
 
     record param {
         name: string,
@@ -37,25 +37,25 @@ interface model {
         data-loader: data-loader,
     }
 
-    record state-key {
+    record weight-key {
         key: string,
         byte-size: u64,
-        state-loader: state-loader,
+        weights-loader: weights-loader,
     }
 
-    record other-model-with-state {
+    record other-model-with-weights {
         model-id: string,
         mount-path: string,
-        state: list<state-key>,
+        weights: list<weight-key>,
     }
 
-    record create-model-state-options {
+    record initialize-weights-options {
         params: list<param>,
-        state-provider: state-provider,
-        other-models: list<other-model-with-state>,
+        weights-provider: weights-provider,
+        other-models: list<other-model-with-weights>,
     }
 
-    create-model-state: func(options: create-model-state-options) -> result<_, string>;
+    initialize-weights: func(options: initialize-weights-options) -> result<_, string>;
 
     record other-model {
         model-id: string,
@@ -63,7 +63,7 @@ interface model {
     }
 
     record instantiate-model-options {
-        state: list<state-key>,
+        weights: list<weight-key>,
         other-models: list<other-model>,
     }
 
@@ -112,14 +112,14 @@ interface model {
         tracker: train-tracker,
     }
 
-    record get-model-state-options {
-        state-provider: state-provider,
+    record get-weights-options {
+        weights-provider: weights-provider,
     }
 
     resource instantiated {
         evaluate: func(options: evaluate-options) -> result<list<evaluate-output>, string>;
         train: func(options: train-options) -> result<_, string>;
-        get-model-state: func(options: get-model-state-options) -> result<_, string>;
+        get-weights: func(options: get-weights-options) -> result<_, string>;
     }
 
     instantiate-model: func(options: instantiate-model-options) -> result<instantiated, string>;

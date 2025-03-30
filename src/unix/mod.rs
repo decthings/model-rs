@@ -2,8 +2,8 @@ mod async_waiter;
 mod asyncs;
 mod dataloader;
 mod host_protocol;
-mod stateprovider;
 mod traintracker;
+mod weightsprovider;
 
 use std::{
     collections::HashMap,
@@ -116,14 +116,14 @@ where
         data_loader
     }
 
-    fn create_state_loader(
+    fn create_weights_loader(
         &self,
         dataset: String,
         total_byte_size: u64,
-    ) -> impl StateLoader + 'static {
+    ) -> impl WeightsLoader + 'static {
         let (data_loader, fut) = self
             .data_loader_manager
-            .create_state_loader(dataset, total_byte_size);
+            .create_weights_loader(dataset, total_byte_size);
         asyncs::spawn(fut);
         data_loader
     }
@@ -133,13 +133,13 @@ where
         command: host_protocol::CommandMessage,
     ) -> Option<(String, host_protocol::ResultMessage, Vec<bytes::Bytes>)> {
         match command {
-            host_protocol::CommandMessage::CallCreateModelState {
+            host_protocol::CommandMessage::CallInitializeWeights {
                 id,
                 params,
                 other_models,
             } => {
-                let error = match std::panic::AssertUnwindSafe(M::create_model_state(
-                    crate::trait_def::CreateModelStateOptions {
+                let error = match std::panic::AssertUnwindSafe(M::initialize_weights(
+                    crate::trait_def::InitializeWeightsOptions {
                         params: params
                             .into_iter()
                             .map(|x| {
@@ -149,7 +149,7 @@ where
                                 )
                             })
                             .collect(),
-                        state_provider: stateprovider::create_state_provider(
+                        weights_provider: weightsprovider::create_weights_provider(
                             &id,
                             self.sender.clone(),
                         ),
@@ -158,15 +158,15 @@ where
                             .map(|other_model| {
                                 (
                                     other_model.id,
-                                    crate::trait_def::OtherModelWithState {
+                                    crate::trait_def::OtherModelWithWeights {
                                         mount_path: other_model.mount_path,
-                                        state: other_model
-                                            .state
+                                        weights: other_model
+                                            .weights
                                             .into_iter()
                                             .map(|param| {
                                                 (
                                                     param.name,
-                                                    self.create_state_loader(
+                                                    self.create_weights_loader(
                                                         param.dataset,
                                                         param.total_byte_size,
                                                     ),
@@ -183,20 +183,20 @@ where
                 .await
                 {
                     Ok(()) => None,
-                    Err(e) => Some(host_protocol::CallCreateModelStateError::Exception {
+                    Err(e) => Some(host_protocol::CallInitializeWeightsError::Exception {
                         details: Some(format_panic(e)),
                     }),
                 };
                 Some((
                     id,
-                    host_protocol::ResultMessage::CallCreateModelState { error },
+                    host_protocol::ResultMessage::CallInitializeWeights { error },
                     vec![],
                 ))
             }
             host_protocol::CommandMessage::CallInstantiateModel {
                 id,
                 instantiated_model_id,
-                state,
+                weights,
                 other_models,
             } => {
                 let (waiter, provider) = async_waiter::AsyncWaiter::<M::Instantiated>::new();
@@ -220,12 +220,12 @@ where
                 let instantiate_fut = async {
                     let res = std::panic::AssertUnwindSafe(M::instantiate_model(
                         crate::trait_def::InstantiateModelOptions {
-                            state: state
+                            weights: weights
                                 .into_iter()
                                 .map(|x| {
                                     (
                                         x.name,
-                                        self.create_state_loader(x.dataset, x.total_byte_size),
+                                        self.create_weights_loader(x.dataset, x.total_byte_size),
                                     )
                                 })
                                 .collect(),
@@ -463,7 +463,7 @@ where
                     data,
                 ))
             }
-            host_protocol::CommandMessage::CallGetModelState {
+            host_protocol::CommandMessage::CallGetWeights {
                 id,
                 instantiated_model_id,
             } => {
@@ -480,9 +480,9 @@ where
                 };
                 let error = match instantiated {
                     Some(instantiated) => {
-                        match std::panic::AssertUnwindSafe(instantiated.as_ref().get_model_state(
-                            crate::trait_def::GetModelStateOptions {
-                                state_provider: stateprovider::create_state_provider(
+                        match std::panic::AssertUnwindSafe(instantiated.as_ref().get_weights(
+                            crate::trait_def::GetWeightsOptions {
+                                weights_provider: weightsprovider::create_weights_provider(
                                     &id,
                                     self.sender.clone(),
                                 ),
@@ -492,16 +492,16 @@ where
                         .await
                         {
                             Ok(()) => None,
-                            Err(e) => Some(host_protocol::CallGetModelStateError::Exception {
+                            Err(e) => Some(host_protocol::CallGetWeightsError::Exception {
                                 details: Some(format_panic(e)),
                             }),
                         }
                     }
-                    None => Some(host_protocol::CallGetModelStateError::InstantiatedModelNotFound),
+                    None => Some(host_protocol::CallGetWeightsError::InstantiatedModelNotFound),
                 };
                 Some((
                     id,
-                    host_protocol::ResultMessage::CallGetModelState { error },
+                    host_protocol::ResultMessage::CallGetWeights { error },
                     vec![],
                 ))
             }

@@ -23,9 +23,9 @@ impl decthings_model::Instantiated for Instantiated {
         todo!()
     }
 
-    fn get_model_state<'a>(
+    fn get_weights<'a>(
         &'a self,
-        _options: decthings_model::GetModelStateOptions<impl decthings_model::StateProvider + 'a>,
+        _options: decthings_model::GetWeightsOptions<impl decthings_model::WeightsProvider + 'a>,
     ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
         todo!()
     }
@@ -36,18 +36,18 @@ struct Model;
 impl decthings_model::Model for Model {
     type Instantiated = Instantiated;
 
-    fn create_model_state<'a>(
-        _options: decthings_model::CreateModelStateOptions<
+    fn initialize_weights<'a>(
+        _options: decthings_model::InitializeWeightsOptions<
             impl decthings_model::DataLoader + 'a,
-            impl decthings_model::StateProvider + 'a,
-            impl decthings_model::StateLoader + 'a,
+            impl decthings_model::WeightsProvider + 'a,
+            impl decthings_model::WeightsLoader + 'a,
         >,
     ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
         todo!()
     }
 
     fn instantiate_model<'a>(
-        _options: decthings_model::InstantiateModelOptions<impl decthings_model::StateLoader + 'a>,
+        _options: decthings_model::InstantiateModelOptions<impl decthings_model::WeightsLoader + 'a>,
     ) -> Pin<Box<dyn Future<Output = Self::Instantiated> + Send + 'a>> {
         todo!()
     }

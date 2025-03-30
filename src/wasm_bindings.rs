@@ -11,9 +11,9 @@ macro_rules! export_decthings_model {
                 pub inner: super::$($path_to_types_root)*::exports::decthings::model::model::DataLoader,
             }
 
-            pub struct StateLoaderImpl {
+            pub struct WeightsLoaderImpl {
                 pub byte_size: u64,
-                pub inner: super::$($path_to_types_root)*::exports::decthings::model::model::StateLoader,
+                pub inner: super::$($path_to_types_root)*::exports::decthings::model::model::WeightsLoader,
             }
         }
 
@@ -81,13 +81,13 @@ macro_rules! export_decthings_model {
             }
         }
 
-        impl ::decthings_model::StateProvider for $($path_to_types_root)*::exports::decthings::model::model::StateProvider {
+        impl ::decthings_model::WeightsProvider for $($path_to_types_root)*::exports::decthings::model::model::WeightsProvider {
             fn provide_all<'a>(
                 &'a mut self,
                 data: &'a [(impl AsRef<str> + Send + Sync + 'a, ::decthings_model::bytes::Bytes)],
             ) -> ::core::pin::Pin<::std::boxed::Box<dyn ::core::future::Future<Output = ()> + Send + 'a>> {
                 ::std::boxed::Box::pin(async move {
-                    $($path_to_types_root)*::exports::decthings::model::model::StateProvider::provide(
+                    $($path_to_types_root)*::exports::decthings::model::model::WeightsProvider::provide(
                         self,
                         &data.into_iter().map(|data| (data.0.as_ref().to_owned(), data.1.to_vec())).collect::<::std::vec::Vec<_>>()
                     );
@@ -95,7 +95,7 @@ macro_rules! export_decthings_model {
             }
         }
 
-        impl ::decthings_model::StateLoader for _decthings_model::StateLoaderImpl {
+        impl ::decthings_model::WeightsLoader for _decthings_model::WeightsLoaderImpl {
             fn byte_size(&self) -> u64 {
                 self.byte_size
             }
@@ -222,15 +222,15 @@ macro_rules! export_decthings_model {
                 Ok(())
             }
 
-            fn get_model_state(
+            fn get_weights(
                 &self,
-                options: $($path_to_types_root)*::exports::decthings::model::model::GetModelStateOptions,
+                options: $($path_to_types_root)*::exports::decthings::model::model::GetWeightsOptions,
             ) -> Result<(), String> {
                 ::decthings_model::wasm_bindings::pollster::block_on(
-                    T::get_model_state(
+                    T::get_weights(
                         self,
-                        ::decthings_model::GetModelStateOptions {
-                            state_provider: options.state_provider,
+                        ::decthings_model::GetWeightsOptions {
+                            weights_provider: options.weights_provider,
                         }
                     )
                 );
@@ -243,12 +243,12 @@ macro_rules! export_decthings_model {
         {
             type Instantiated = T::Instantiated;
 
-            fn create_model_state(
-                options: $($path_to_types_root)*::exports::decthings::model::model::CreateModelStateOptions,
+            fn initialize_weights(
+                options: $($path_to_types_root)*::exports::decthings::model::model::InitializeWeightsOptions,
             ) -> Result<(), String> {
                 ::decthings_model::wasm_bindings::pollster::block_on(
-                    T::create_model_state(
-                        ::decthings_model::CreateModelStateOptions {
+                    T::initialize_weights(
+                        ::decthings_model::InitializeWeightsOptions {
                             params: options.params.into_iter().map(|param| (
                                 param.name,
                                 _decthings_model::DataLoaderBinaryImpl {
@@ -258,17 +258,17 @@ macro_rules! export_decthings_model {
                                     inner: param.data_loader,
                                 },
                             )).collect(),
-                            state_provider: options.state_provider,
+                            weights_provider: options.weights_provider,
                             other_models: options.other_models.into_iter()
                                 .map(|other_model| (
                                     other_model.model_id,
-                                    ::decthings_model::OtherModelWithState {
+                                    ::decthings_model::OtherModelWithWeights {
                                         mount_path: other_model.mount_path,
-                                        state: other_model.state.into_iter().map(|state_key| (
-                                            state_key.key,
-                                            _decthings_model::StateLoaderImpl {
-                                                byte_size: state_key.byte_size,
-                                                inner: state_key.state_loader,
+                                        weights: other_model.weights.into_iter().map(|weight_key| (
+                                            weight_key.key,
+                                            _decthings_model::WeightsLoaderImpl {
+                                                byte_size: weight_key.byte_size,
+                                                inner: weight_key.weights_loader,
                                             },
                                         )).collect(),
                                     },
@@ -287,11 +287,11 @@ macro_rules! export_decthings_model {
                     ::decthings_model::wasm_bindings::pollster::block_on(
                         T::instantiate_model(
                             ::decthings_model::InstantiateModelOptions {
-                                state: options.state.into_iter().map(|state_key| (
-                                    state_key.key,
-                                    _decthings_model::StateLoaderImpl {
-                                        byte_size: state_key.byte_size,
-                                        inner: state_key.state_loader,
+                                weights: options.weights.into_iter().map(|weight_key| (
+                                    weight_key.key,
+                                    _decthings_model::WeightsLoaderImpl {
+                                        byte_size: weight_key.byte_size,
+                                        inner: weight_key.weights_loader,
                                     },
                                 )).collect(),
                                 other_models: options.other_models.into_iter().map(|other_model| (

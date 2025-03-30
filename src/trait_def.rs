@@ -27,13 +27,13 @@ impl From<EvaluateOutput> for EvaluateOutputBinary {
     }
 }
 
-pub trait StateLoader: Send + Sync {
+pub trait WeightsLoader: Send + Sync {
     fn byte_size(&self) -> u64;
 
     fn read(&mut self) -> BoxFuture<'_, bytes::Bytes>;
 }
 
-pub trait StateProvider: Send + Sync {
+pub trait WeightsProvider: Send + Sync {
     fn provide_all<'a>(
         &'a mut self,
         data: &'a [(impl AsRef<str> + Send + Sync + 'a, bytes::Bytes)],
@@ -243,8 +243,8 @@ pub struct TrainOptions<D, T> {
 }
 
 #[derive(Clone, Debug)]
-pub struct GetModelStateOptions<SP: StateProvider> {
-    pub state_provider: SP,
+pub struct GetWeightsOptions<WP: WeightsProvider> {
+    pub weights_provider: WP,
 }
 
 pub trait InstantiatedBinary: Send + Sync {
@@ -264,26 +264,26 @@ pub trait InstantiatedBinary: Send + Sync {
         panic!("Train was called but was not implemented.");
     }
 
-    fn get_model_state<'a>(
+    fn get_weights<'a>(
         &'a self,
-        options: GetModelStateOptions<impl StateProvider + 'a>,
+        options: GetWeightsOptions<impl WeightsProvider + 'a>,
     ) -> BoxFuture<'a, ()> {
         let _ = options;
-        panic!("GetModelState was called but was not implemented.");
+        panic!("GetWeights was called but was not implemented.");
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct OtherModelWithState<SL: StateLoader> {
+pub struct OtherModelWithWeights<WL: WeightsLoader> {
     pub mount_path: String,
-    pub state: HashMap<String, SL>,
+    pub weights: HashMap<String, WL>,
 }
 
 #[derive(Clone, Debug)]
-pub struct CreateModelStateOptions<D, SP: StateProvider, SL: StateLoader> {
+pub struct InitializeWeightsOptions<D, WP: WeightsProvider, WL: WeightsLoader> {
     pub params: HashMap<String, D>,
-    pub state_provider: SP,
-    pub other_models: HashMap<String, OtherModelWithState<SL>>,
+    pub weights_provider: WP,
+    pub other_models: HashMap<String, OtherModelWithWeights<WL>>,
 }
 
 #[derive(Clone, Debug)]
@@ -292,27 +292,27 @@ pub struct OtherModel {
 }
 
 #[derive(Clone, Debug)]
-pub struct InstantiateModelOptions<SL: StateLoader> {
-    pub state: HashMap<String, SL>,
+pub struct InstantiateModelOptions<WL: WeightsLoader> {
+    pub weights: HashMap<String, WL>,
     pub other_models: HashMap<String, OtherModel>,
 }
 
 pub trait ModelBinary: Send + Sync {
     type Instantiated: InstantiatedBinary;
 
-    fn create_model_state<'a>(
-        options: CreateModelStateOptions<
+    fn initialize_weights<'a>(
+        options: InitializeWeightsOptions<
             impl DataLoaderBinary + 'a,
-            impl StateProvider + 'a,
-            impl StateLoader + 'a,
+            impl WeightsProvider + 'a,
+            impl WeightsLoader + 'a,
         >,
     ) -> BoxFuture<'a, ()> {
         let _ = options;
-        panic!("CreateModelState was called but was not implemented.");
+        panic!("InitializeWeights was called but was not implemented.");
     }
 
     fn instantiate_model<'a>(
-        options: InstantiateModelOptions<impl StateLoader + 'a>,
+        options: InstantiateModelOptions<impl WeightsLoader + 'a>,
     ) -> BoxFuture<'a, Self::Instantiated> {
         let _ = options;
         panic!("InstantiateModel was called but was not implemented.");
@@ -336,12 +336,12 @@ pub trait Instantiated: Send + Sync {
         panic!("Train was called but was not implemented.");
     }
 
-    fn get_model_state<'a>(
+    fn get_weights<'a>(
         &'a self,
-        options: GetModelStateOptions<impl StateProvider + 'a>,
+        options: GetWeightsOptions<impl WeightsProvider + 'a>,
     ) -> BoxFuture<'a, ()> {
         let _ = options;
-        panic!("GetModelState was called but was not implemented.");
+        panic!("GetWeights was called but was not implemented.");
     }
 }
 
@@ -363,30 +363,30 @@ impl<T: Instantiated + Sync> InstantiatedBinary for T {
         T::train(self, options)
     }
 
-    fn get_model_state<'a>(
+    fn get_weights<'a>(
         &'a self,
-        options: GetModelStateOptions<impl StateProvider + 'a>,
+        options: GetWeightsOptions<impl WeightsProvider + 'a>,
     ) -> BoxFuture<'a, ()> {
-        T::get_model_state(self, options)
+        T::get_weights(self, options)
     }
 }
 
 pub trait Model: Send + Sync {
     type Instantiated: Instantiated;
 
-    fn create_model_state<'a>(
-        options: CreateModelStateOptions<
+    fn initialize_weights<'a>(
+        options: InitializeWeightsOptions<
             impl DataLoader + 'a,
-            impl StateProvider + 'a,
-            impl StateLoader + 'a,
+            impl WeightsProvider + 'a,
+            impl WeightsLoader + 'a,
         >,
     ) -> BoxFuture<'a, ()> {
         let _ = options;
-        panic!("CreateModelState was called but was not implemented.");
+        panic!("InitializeWeights was called but was not implemented.");
     }
 
     fn instantiate_model<'a>(
-        options: InstantiateModelOptions<impl StateLoader + 'a>,
+        options: InstantiateModelOptions<impl WeightsLoader + 'a>,
     ) -> BoxFuture<'a, Self::Instantiated> {
         let _ = options;
         panic!("InstantiateModel was called but was not implemented.");
@@ -399,18 +399,18 @@ where
 {
     type Instantiated = T::Instantiated;
 
-    fn create_model_state<'a>(
-        options: CreateModelStateOptions<
+    fn initialize_weights<'a>(
+        options: InitializeWeightsOptions<
             impl DataLoaderBinary + 'a,
-            impl StateProvider + 'a,
-            impl StateLoader + 'a,
+            impl WeightsProvider + 'a,
+            impl WeightsLoader + 'a,
         >,
     ) -> BoxFuture<'a, ()> {
-        T::create_model_state(options)
+        T::initialize_weights(options)
     }
 
     fn instantiate_model<'a>(
-        options: InstantiateModelOptions<impl StateLoader + 'a>,
+        options: InstantiateModelOptions<impl WeightsLoader + 'a>,
     ) -> BoxFuture<'a, Self::Instantiated> {
         T::instantiate_model(options)
     }

@@ -94,7 +94,7 @@ impl<'a> DataLoaderBinary for DataLoaderImpl<'a> {
     }
 }
 
-impl<'a> crate::StateLoader for DataLoaderImpl<'a> {
+impl<'a> crate::WeightsLoader for DataLoaderImpl<'a> {
     fn byte_size(&self) -> u64 {
         crate::DataLoaderBinary::total_byte_size(self)
     }
@@ -144,7 +144,7 @@ impl DataLoaderManager {
         size: u32,
         total_byte_size: u64,
     ) -> (
-        impl DataLoaderBinary + StateLoader + 'static,
+        impl DataLoaderBinary + WeightsLoader + 'static,
         impl Future<Output = ()> + Send + 'static,
     ) {
         let (tx, mut rx) = super::asyncs::channel(1);
@@ -199,12 +199,12 @@ impl DataLoaderManager {
         self.do_create_data_loader(dataset, size, total_byte_size)
     }
 
-    pub fn create_state_loader(
+    pub fn create_weights_loader(
         &self,
         dataset: String,
         byte_size: u64,
     ) -> (
-        impl StateLoader + 'static,
+        impl WeightsLoader + 'static,
         impl Future<Output = ()> + Send + 'static,
     ) {
         self.do_create_data_loader(dataset, 1, byte_size)
