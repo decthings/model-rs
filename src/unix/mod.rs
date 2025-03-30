@@ -25,7 +25,7 @@ lazy_static::lazy_static! {
     static ref PANIC_INFO: Arc<Mutex<Option<PanicInfo>>> = Arc::new(Mutex::new(None));
 }
 
-fn panic_hook(msg: &std::panic::PanicInfo) {
+fn panic_hook(msg: &std::panic::PanicHookInfo) {
     *PANIC_INFO.lock().unwrap() = Some(PanicInfo {
         backtrace: std::backtrace::Backtrace::force_capture().to_string(),
         location: msg
